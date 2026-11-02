@@ -1,0 +1,39 @@
+# Physical parameters of the simulated conveyor. The values are plausible, not from a real site.
+
+# Speeds in m/s, accelerations in m/s^2
+nominal_speed: 4.0
+max_speed: 6.0
+acceleration: 0.5
+estop_deceleration: 2.0
+belt_response: 2.0        # how fast the belt can follow the drive pulley
+
+# Material, t/h at nominal speed
+nominal_flow: 2000.0
+feed_reversion: 0.1       # how quickly upstream feed returns to nominal (1/s)
+feed_sigma: 0.02          # size of the random feed variation
+
+# Motor current, A
+no_load_current: 40.0
+current_per_speed: 5.0    # empty-belt friction, A per m/s
+current_per_flow: 0.09    # lifting material, A per t/h
+
+# Bearing temperature, degC
+ambient_temp: 25.0
+temp_rise_per_speed: 9.0  # steady-state rise per m/s
+thermal_time_constant: 60.0  # seconds; short on purpose so a demo shows faults within a minute or two
+
+# Vibration, mm/s RMS
+vibration_per_speed: 0.5
+vibration_onset_temp: 70.0  # above this the bearing starts to degrade
+vibration_per_degree: 0.15
+
+# Fault severity
+overload_factor: 1.8          # material flow multiplier
+overheat_cooling_factor: 0.25 # remaining fraction of normal bearing cooling
+slip_ratio: 0.3               # fraction of drive speed lost at the belt
+
+# Sensor noise, standard deviation in engineering units
+noise_speed: 0.01
+noise_current: 1.0
+noise_temp: 0.1
+noise_vibration: 0.05

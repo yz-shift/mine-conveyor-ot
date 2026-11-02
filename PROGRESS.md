@@ -2,6 +2,13 @@
 
 > 进度日志。新的写在最上面；只追加，不删改旧记录。
 
+## 2026-11-02 · T-003 · 完成
+- 做了：写传送带物理模型（状态机、速度爬升、物料、电流、轴承温度、振动、传感器噪声）和四种故障（过载、轴承过热、皮带打滑、急停）；参数放进 config/plant.yaml
+- 改了：config/plant.yaml、simulator/plant.py、tests/test_plant.py
+- 验证：`pytest` 全部通过。另外在临时副本里故意改坏 14 处代码，第一轮发现 13 处；漏掉的"停机后轴承仍热时振动应为 0"已补测试
+- 问题：和 PLAN.md 有一处不同：电流公式改成"空载 + a×速度 + b×流量"，不是方案里的"k×流量×速度"。提升物料的功率取决于吨每小时，流量本身已含速度，再乘一次速度会高估
+- 下一步：T-004 Modbus 服务端
+
 ## 2026-11-02 · T-002 · 完成
 - 做了：建 venv、装依赖并锁定版本；写寄存器表（8 个输入寄存器、1 个保持寄存器、7 个线圈）和校验加载器；写环境变量配置加载
 - 改了：pyproject.toml、requirements-lock.txt、.gitignore、.gitattributes、.env.example、config/registers.yaml、shared/registers.py、shared/settings.py、tests/test_registers.py、tests/test_settings.py；AGENTS.md 第 1、2 节（填命令）
