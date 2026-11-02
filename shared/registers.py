@@ -9,6 +9,7 @@ DEFAULT_PATH = Path(__file__).resolve().parent.parent / "config" / "registers.ya
 MAX_ADDRESS = 0xFFFF
 MAX_RAW = 0xFFFF
 TABLES = ("input_registers", "holding_registers", "coils")
+DEVICE_ID = 1  # Modbus unit id of the conveyor
 
 
 class RegisterMapError(ValueError):
