@@ -1,0 +1,31 @@
+# Alarm limits. Each alarm watches one signal: an input register, or a derived signal from hmi/alarms.py.
+#   threshold: raises when the signal goes above this
+#   deadband:  clears only once the signal is back at threshold - deadband, so noise cannot make it chatter
+#   delay:     the signal must stay above the threshold this long (seconds) before the alarm raises
+
+# Below this motor speed (m/s) slip is not calculated: the ratio of two small noisy numbers means nothing.
+slip_min_speed: 0.5
+
+alarms:
+  # At nominal speed the bearing settles near 61 degC, at maximum speed near 79 degC.
+  - {name: bearing_temp_high, signal: bearing_temp, severity: warning, threshold: 85, deadband: 3, delay: 3, message: Bearing temperature high}
+  - {name: bearing_temp_critical, signal: bearing_temp, severity: critical, threshold: 110, deadband: 5, delay: 3, message: Bearing temperature critical}
+
+  # Healthy running peaks at 4.6 mm/s at maximum speed (20 simulated hours), so the warning sits just above that.
+  - {name: vibration_high, signal: vibration, severity: warning, threshold: 5.0, deadband: 0.3, delay: 3, message: Bearing vibration high}
+  - {name: vibration_critical, signal: vibration, severity: critical, threshold: 7.1, deadband: 0.5, delay: 3, message: Bearing vibration critical}
+
+  # Measured over 20 simulated hours. Healthy at maximum speed peaks at 393 A and 3591 t/h;
+  # overload at nominal speed has a median of 421 A and 4014 t/h. Critical takes overload at higher speed.
+  - {name: motor_current_high, signal: motor_current, severity: warning, threshold: 400, deadband: 15, delay: 2, message: Motor current high}
+  - {name: motor_current_critical, signal: motor_current, severity: critical, threshold: 480, deadband: 15, delay: 2, message: Motor overcurrent}
+  - {name: material_flow_high, signal: material_flow, severity: warning, threshold: 3700, deadband: 150, delay: 2, message: Material flow high}
+  - {name: material_flow_critical, signal: material_flow, severity: critical, threshold: 4500, deadband: 150, delay: 2, message: Material flow overload}
+
+  # Fraction of drive speed lost at the belt.
+  - {name: belt_slip_warning, signal: slip_ratio, severity: warning, threshold: 0.1, deadband: 0.03, delay: 2, message: Belt slipping}
+  - {name: belt_slip_critical, signal: slip_ratio, severity: critical, threshold: 0.25, deadband: 0.03, delay: 2, message: Belt slipping badly}
+
+  # On/off signals, 0 or 1. No delay: these are facts, not noisy measurements.
+  - {name: emergency_stop, signal: emergency_stop, severity: critical, threshold: 0.5, deadband: 0.5, delay: 0, message: Emergency stop active}
+  - {name: comm_lost, signal: comm_lost, severity: critical, threshold: 0.5, deadband: 0.5, delay: 0, message: Lost communication with the plant}

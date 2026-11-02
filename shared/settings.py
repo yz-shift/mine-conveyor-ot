@@ -14,6 +14,7 @@ class Settings:
     modbus_port: int = 5020
     hmi_host: str = "127.0.0.1"
     hmi_port: int = 8000
+    hmi_db_path: str = "data/hmi.sqlite3"
 
 
 def _port(env: Mapping[str, str], key: str, default: int) -> int:
@@ -40,4 +41,5 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         modbus_port=_port(env, "MODBUS_PORT", defaults.modbus_port),
         hmi_host=env.get("HMI_HOST", defaults.hmi_host),
         hmi_port=_port(env, "HMI_PORT", defaults.hmi_port),
+        hmi_db_path=env.get("HMI_DB_PATH", defaults.hmi_db_path),
     )

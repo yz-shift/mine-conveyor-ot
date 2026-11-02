@@ -16,6 +16,11 @@ def test_environment_overrides_defaults():
     assert settings.hmi_host == "0.0.0.0"
 
 
+def test_database_path_can_be_overridden():
+    assert load_settings({}).hmi_db_path == "data/hmi.sqlite3"
+    assert load_settings({"HMI_DB_PATH": "elsewhere.sqlite3"}).hmi_db_path == "elsewhere.sqlite3"
+
+
 @pytest.mark.parametrize("value", ["abc", "0", "70000"])
 def test_bad_port_is_rejected(value):
     with pytest.raises(ValueError, match="MODBUS_PORT"):

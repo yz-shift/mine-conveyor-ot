@@ -2,6 +2,13 @@
 
 > 进度日志。新的写在最上面；只追加，不删改旧记录。
 
+## 2026-11-02 · T-005 · 完成
+- 做了：HMI 后端。报警引擎（纯逻辑：阈值、死区、延时、确认、四状态）；12 条报警配置；SQLite 记录报警事件和操作（失败的操作也记）；Modbus 客户端（每个表一次读完，断线自动重连）；每秒轮询服务；REST 接口和 WebSocket 推送。断连时读数返回 null 而不是冻结的旧值，并触发 comm_lost 报警，其他报警保持原状态。轮询循环崩溃时整个进程退出。为了给 T-006 直接用，REST 和 WebSocket 接口也在这一步做了
+- 改了：hmi/alarms.py、hmi/logbook.py、hmi/plant_client.py、hmi/service.py、hmi/app.py、hmi/__init__.py、config/alarms.yaml、tests/test_alarms.py、tests/test_hmi.py（新增）；shared/settings.py、tests/test_settings.py、.env.example（加 HMI_DB_PATH）；config/plant.yaml（overload_factor 1.8 → 2.0）
+- 验证：`pytest` 全部通过，连跑 3 次无偶发失败（当时 155 项，之后加 1 项配置测试）；全链路测试用真实 Modbus、HTTP、WebSocket 和 SQLite 文件。故意改坏 32 处：第一轮发现 27 处，漏掉的 5 处都是测试断言太松，补测试后这 5 处全部能发现。用真实进程和默认参数跑过：先起 HMI 后起模拟器，再做启动、打滑、过载、急停、杀掉模拟器，报警和数据库记录都符合预期
+- 问题：① 第一版阈值是估算的，测试发现满速健康运行也会误报（电流实际最高 393 A，注释写的约 340 A）。改成用 20 小时模拟数据定阈值，并加了"6 小时健康运行无误报"测试。过载和满速的波动有重叠，所以把过载倍数调到 2.0。② 不加新依赖，所以测试不用 TestClient（要 httpx），直接起 uvicorn。③ 已知局限，写进 T-009：接口没有认证，也没有防跨站请求，只适合本机；报警状态在内存里，HMI 重启后会重新判断；"操作成功"只代表 Modbus 写入成功，设备是否接受要看 run_state；电机低于 0.5 m/s 不算打滑；有些故障在标称速度下只到警告级，比如过载通常到不了严重级
+- 下一步：T-006 HMI 网页
+
 ## 2026-11-02 · T-004 · 完成
 - 做了：写 Modbus TCP 服务端，按 PLC 扫描周期运行（读控制点 → 推进物理模型 → 发布读数，每 100 ms 一次）；命令线圈执行后自动清零，故障注入线圈保持电平；同一扫描内多条命令时急停优先于停止，停止优先于启动；超范围设速钳位后写回寄存器；扫描循环崩溃时进程退出，不继续提供冻结的读数
 - 改了：simulator/server.py（新增）、tests/test_server.py（新增）、shared/registers.py（加 DEVICE_ID）
