@@ -1,0 +1,39 @@
+# Modbus register map: the contract between the simulator and the HMI.
+# Addresses are 0-based protocol addresses (what goes on the wire), not 3xxxx/4xxxx display numbers.
+# Registers are unsigned 16-bit, so decimals are stored as fixed point:
+#   raw = engineering value * scale
+
+# Function code 04, read only.
+input_registers:
+  - {name: belt_speed, address: 0, scale: 100, unit: m/s, min: 0, max: 8, description: Measured belt surface speed}
+  - {name: motor_speed, address: 1, scale: 100, unit: m/s, min: 0, max: 8, description: Drive pulley surface speed; differs from belt_speed when the belt slips}
+  - {name: motor_current, address: 2, scale: 10, unit: A, min: 0, max: 600, description: Drive motor current}
+  - {name: bearing_temp, address: 3, scale: 10, unit: degC, min: 0, max: 200, description: Drive-end bearing temperature}
+  - {name: vibration, address: 4, scale: 100, unit: mm/s, min: 0, max: 50, description: Bearing vibration velocity (RMS)}
+  - {name: material_flow, address: 5, scale: 1, unit: t/h, min: 0, max: 5000, description: Material flow on the belt}
+  - name: run_state
+    address: 6
+    min: 0
+    max: 4
+    description: Conveyor state machine
+    labels: {0: stopped, 1: starting, 2: running, 3: stopping, 4: emergency_stop}
+  - name: fault_code
+    address: 7
+    min: 0
+    max: 15
+    description: Active faults as a bit field
+    labels: {1: overload, 2: bearing_overheat, 4: belt_slip, 8: emergency_stop}
+
+# Function codes 03 / 06, read and write.
+holding_registers:
+  - {name: speed_setpoint, address: 0, scale: 100, unit: m/s, min: 0, max: 6, description: Requested belt speed}
+
+# Function codes 01 / 05, read and write. The simulator clears command coils once it has acted on them.
+coils:
+  - {name: cmd_start, address: 0, description: Start the conveyor}
+  - {name: cmd_stop, address: 1, description: Controlled stop}
+  - {name: cmd_estop, address: 2, description: Emergency stop}
+  - {name: cmd_reset, address: 3, description: Reset after an emergency stop}
+  - {name: inject_overload, address: 4, description: "Fault injection: material flow surge"}
+  - {name: inject_bearing_overheat, address: 5, description: "Fault injection: bearing cooling degraded"}
+  - {name: inject_belt_slip, address: 6, description: "Fault injection: belt slips on the drive pulley"}

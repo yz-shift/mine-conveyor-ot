@@ -6,16 +6,17 @@
 ## 1. 项目是什么
 
 - 目标：矿场传送带 OT 模拟与监控系统：Python 设备模拟器（Modbus TCP 服务端）+ 网页 HMI（Modbus 客户端），展示运营技术和工业自动化能力
-- 技术栈：Python 3.12 + pymodbus（以 T-001 方案确认为准）
-- 入口文件：（T-001 确认后填）
+- 技术栈：Python 3.12 + pymodbus（Modbus TCP）+ FastAPI + WebSocket + 原生 JS + Chart.js + SQLite
+- 入口文件：`run.py`（T-007 才建）；寄存器表 `config/registers.yaml`，由 `shared/registers.py` 加载
 
 ## 2. 常用命令
 
 | 用途 | 命令 |
 |---|---|
-| 安装依赖 | （填） |
-| 运行 | （填） |
-| 测试 | （填） |
+| 建环境 | `python -m venv .venv` |
+| 安装依赖 | `.venv\Scripts\python.exe -m pip install -e ".[dev]"` |
+| 运行 | （T-007 完成后才有：`python run.py`） |
+| 测试 | `.venv\Scripts\python.exe -m pytest` |
 
 表里没填的命令不要猜，先问我。
 
