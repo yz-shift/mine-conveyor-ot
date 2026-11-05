@@ -1,0 +1,43 @@
+services:
+  simulator:
+    build: .
+    command: python -m simulator.server
+    init: true # forwards stop signals; a process running as PID 1 would ignore them
+    environment:
+      MODBUS_HOST: 0.0.0.0
+      MODBUS_PORT: "5020"
+    # No `ports` on purpose. Modbus TCP has no authentication, so it stays on the compose network.
+    expose:
+      - "5020"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 5020), 2).close()"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  hmi:
+    build: .
+    command: python -m hmi.app
+    init: true
+    environment:
+      MODBUS_HOST: simulator
+      MODBUS_PORT: "5020"
+      HMI_HOST: 0.0.0.0
+      HMI_PORT: "8000"
+      HMI_DB_PATH: data/hmi.sqlite3
+    depends_on:
+      simulator:
+        condition: service_healthy
+    # Published on localhost only: the HMI has no login.
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - hmi-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/state', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  hmi-data:

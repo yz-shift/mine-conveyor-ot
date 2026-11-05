@@ -2,6 +2,14 @@
 
 > 进度日志。新的写在最上面；只追加，不删改旧记录。
 
+## 2026-11-05 · T-007 · 进行中
+- 做了：`run.py` 一条命令启动模拟器和 HMI，任何一个退出就全部停止；`scripts/smoke_test.py` 从外部检查整个系统（只用标准库，本地和 compose 共用）；Dockerfile、docker-compose.yml（Modbus 只在 compose 内网，HMI 只发布到本机 127.0.0.1，非 root 运行，用命名卷存 SQLite）；GitHub Actions（pytest + compose 构建、启动、冒烟）
+- 改了：run.py、scripts/smoke_test.py、tests/test_run.py、Dockerfile、docker-compose.yml、.dockerignore、.github/workflows/ci.yml（新增）；TASKS.md
+- 验证：`pytest` 162 项连跑 3 次全部通过。默认端口实跑 `python run.py`：冒烟测试通过，浏览器页面显示在线、无控制台报错。端口被占时另一个进程也会停，Ctrl+Break 后两个进程都退出（测试覆盖）
+- 未验证：docker-compose 和 Linux 上的测试。本机没有 docker，要 git push 后由 GitHub Actions 验证，所以本任务还不能标完成
+- 问题：无。这一步没有做"故意改坏代码"的检查。依赖锁定文件含开发依赖，镜像会大一点
+- 下一步：等我同意 git push，看 Actions 结果
+
 ## 2026-11-05 · T-006 · 完成
 - 做了：HMI 网页（原生 JS + Chart.js）：实时读数、5 张趋势图（含报警限值线，断连时留空）、报警列表和确认、启停、急停、复位、调速、故障注入、报警历史、操作日志。按钮按设备状态启用或禁用；后端断开时清空读数并提示，恢复后自动重连。新增 /api/config，页面布局和限值都从 YAML 来。界面风格参考 ISA-101：平时灰色，只有异常才有颜色
 - 改了：hmi/static/index.html、style.css、app.js（新增）；hmi/app.py（/api/config、托管静态文件）；tests/test_hmi.py；docs/images/（4 张截图）；TASKS.md

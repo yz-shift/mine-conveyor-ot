@@ -1,0 +1,8 @@
+*
+!requirements-lock.txt
+!config
+!shared
+!simulator
+!hmi
+**/__pycache__
+**/*.pyc
