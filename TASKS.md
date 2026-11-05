@@ -11,8 +11,6 @@
 
 > 2026-11-02 确认：Modbus 用 5020 端口；本地 `python run.py` 一条命令启动，docker-compose 交给 GitHub Actions 云端验证；网页用 WebSocket 推送；先集中做完本项目，再做项目 4、5。
 
-- [ ] T-008 文档：寄存器地址表、架构图、报警逻辑说明
-  - 验收：三份文档齐全，和代码一致
 - [ ] T-009 README：简介、动图、技术栈、运行方法、设计取舍、已知局限
   - 验收：README 齐全
 
@@ -22,6 +20,8 @@
 
 ## 已完成
 
+- [x] T-008 文档：寄存器地址表、架构图、报警逻辑说明 — 2026-11-05
+  - 验收：三份文档齐全，和代码一致；tests/test_docs.py 防止两者不一致
 - [x] T-007 一条命令启动 + docker-compose — 2026-11-05
   - 验收：`python run.py` 拉起两个进程，网页可用；GitHub Actions 能构建并启动 docker-compose
   - 备注：本机没有 docker，compose 只在云端验证
