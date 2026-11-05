@@ -5,9 +5,7 @@
 
 ## 进行中
 
-- [~] T-007 一条命令启动 + docker-compose
-  - 验收：`python run.py` 拉起两个进程，网页可用；GitHub Actions 能构建并启动 docker-compose
-  - 备注：本机没有 docker，compose 只在云端验证
+（空）
 
 ## 待做
 
@@ -24,6 +22,9 @@
 
 ## 已完成
 
+- [x] T-007 一条命令启动 + docker-compose — 2026-11-05
+  - 验收：`python run.py` 拉起两个进程，网页可用；GitHub Actions 能构建并启动 docker-compose
+  - 备注：本机没有 docker，compose 只在云端验证
 - [x] T-006 HMI 网页：实时读数、趋势图、报警列表、启停和调速（WebSocket） — 2026-11-05
   - 验收：浏览器实测注入每种故障都能看到对应报警；截图在 docs/images/
 - [x] T-005 HMI 后端：轮询 + 报警引擎 + SQLite 日志 — 2026-11-02

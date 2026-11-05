@@ -2,6 +2,13 @@
 
 > 进度日志。新的写在最上面；只追加，不删改旧记录。
 
+## 2026-11-05 · T-007 · 完成
+- 做了：我同意后推送到 GitHub，Actions 跑通
+- 改了：TASKS.md
+- 验证：GitHub Actions 第 41996615275 次运行成功：test（Linux 上的 pytest）和 compose（构建镜像、启动、健康检查、冒烟测试）两个作业都通过
+- 问题：无
+- 下一步：T-008 文档
+
 ## 2026-11-05 · T-007 · 进行中
 - 做了：`run.py` 一条命令启动模拟器和 HMI，任何一个退出就全部停止；`scripts/smoke_test.py` 从外部检查整个系统（只用标准库，本地和 compose 共用）；Dockerfile、docker-compose.yml（Modbus 只在 compose 内网，HMI 只发布到本机 127.0.0.1，非 root 运行，用命名卷存 SQLite）；GitHub Actions（pytest + compose 构建、启动、冒烟）
 - 改了：run.py、scripts/smoke_test.py、tests/test_run.py、Dockerfile、docker-compose.yml、.dockerignore、.github/workflows/ci.yml（新增）；TASKS.md
