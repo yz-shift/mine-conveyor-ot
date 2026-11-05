@@ -2,6 +2,13 @@
 
 > 进度日志。新的写在最上面；只追加，不删改旧记录。
 
+## 2026-11-05 · T-009 · 完成
+- 做了：写 README（简介、动图、技术栈、运行方法、项目结构、设计取舍、已知局限、测试方式）；用真实运行的系统录了 9 帧，做成演示动图
+- 改了：README.md、docs/images/hmi-demo.gif（新增）；tests/test_docs.py（README 提到的文件路径也要存在）；TASKS.md
+- 验证：`pytest` 174 项全部通过。README 里的命令都实际跑过：Windows 的 `run.py`、冒烟测试、pytest；Linux 和 docker compose 由 Actions 跑过。动图和 README 还没在 GitHub 页面上看过
+- 问题：动图是截图拼接并加速的，帧数少，不是连续录屏。录制时的点击用脚本触发，所以画面里看不到鼠标。动图只用了系统 Python 已有的 Pillow，项目没有新增依赖。macOS 没验证过，所以 README 只写了 Windows 和 Linux
+- 下一步：推送需要我同意；然后开新会话做 T-999 面试演练
+
 ## 2026-11-05 · T-008 · 完成
 - 做了：写寄存器地址表、架构说明（系统图、一次操作的时序图、设计取舍表）、报警逻辑说明（状态图、限值表、限值的来源）；加文档一致性测试，寄存器、报警限值、扫描和轮询周期、文档里提到的文件路径，只要和代码对不上测试就失败
 - 改了：docs/registers.md、docs/architecture.md、docs/alarms.md、tests/test_docs.py（新增）；TASKS.md

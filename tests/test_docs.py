@@ -76,7 +76,7 @@ def test_slip_minimum_speed_in_the_doc_matches_the_config():
     assert f"`slip_min_speed` ({ALARMS.slip_min_speed} m/s)" in (DOCS / "alarms.md").read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("document", ["architecture.md", "alarms.md", "registers.md"])
+@pytest.mark.parametrize("document", ["architecture.md", "alarms.md", "registers.md", "../README.md"])
 def test_files_named_in_the_docs_exist(document):
     root = DOCS.parent
     text = (DOCS / document).read_text(encoding="utf-8")
