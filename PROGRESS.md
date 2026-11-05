@@ -2,6 +2,14 @@
 
 > 进度日志。新的写在最上面；只追加，不删改旧记录。
 
+## 2026-11-05 · T-006 · 完成
+- 做了：HMI 网页（原生 JS + Chart.js）：实时读数、5 张趋势图（含报警限值线，断连时留空）、报警列表和确认、启停、急停、复位、调速、故障注入、报警历史、操作日志。按钮按设备状态启用或禁用；后端断开时清空读数并提示，恢复后自动重连。新增 /api/config，页面布局和限值都从 YAML 来。界面风格参考 ISA-101：平时灰色，只有异常才有颜色
+- 改了：hmi/static/index.html、style.css、app.js（新增）；hmi/app.py（/api/config、托管静态文件）；tests/test_hmi.py；docs/images/（4 张截图）；TASKS.md
+- 验证：`pytest` 全部通过（158 项，浏览器实测后又跑了一遍）。内置浏览器用默认参数实测：启动、设速 2.5 m/s、打滑、过载、轴承过热、急停、复位都看到对应报警和状态，确认按钮可用，操作日志正确；杀掉模拟器后读数清空、comm_lost 报警、控件禁用，模拟器恢复后自动重连；杀掉 HMI 后端后显示提示，恢复后不刷新页面也能自动重连；375 宽度无横向滚动。控制台无报错
+- 未验证：Chart.js 加载失败时的提示（本次 CDN 都能访问）。网页 JS 没有自动化测试，只有这次手工实测
+- 问题：① 实测发现报警表的数值不刷新（表里 7.41，卡片已到 8.02），是为了不打断点击才只在状态变化时重建表格，已改成只原地更新数值。② 操作日志窄面板里结果列被截断，已改为换行。③ 我开发时误把 C:\Users\hoeyz\.claude\launch.json 覆盖了（原内容应是 beauty-crm 的预览配置），已按 10-22 会话记录中的内容恢复
+- 下一步：T-007 一条命令启动 + docker-compose
+
 ## 2026-11-02 · T-005 · 完成
 - 做了：HMI 后端。报警引擎（纯逻辑：阈值、死区、延时、确认、四状态）；12 条报警配置；SQLite 记录报警事件和操作（失败的操作也记）；Modbus 客户端（每个表一次读完，断线自动重连）；每秒轮询服务；REST 接口和 WebSocket 推送。断连时读数返回 null 而不是冻结的旧值，并触发 comm_lost 报警，其他报警保持原状态。轮询循环崩溃时整个进程退出。为了给 T-006 直接用，REST 和 WebSocket 接口也在这一步做了
 - 改了：hmi/alarms.py、hmi/logbook.py、hmi/plant_client.py、hmi/service.py、hmi/app.py、hmi/__init__.py、config/alarms.yaml、tests/test_alarms.py、tests/test_hmi.py（新增）；shared/settings.py、tests/test_settings.py、.env.example（加 HMI_DB_PATH）；config/plant.yaml（overload_factor 1.8 → 2.0）

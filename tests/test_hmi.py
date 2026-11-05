@@ -60,7 +60,7 @@ class Stack:
         client = PlantClient(HOST, self.modbus_port, REGISTERS, timeout=0.5)
         self.service = HmiService(client, REGISTERS, ALARMS, self.logbook, poll_period=self.poll_period)
         await self.service.start()
-        app = create_app(self.service, REGISTERS, self.logbook)
+        app = create_app(self.service, REGISTERS, self.logbook, ALARMS)
         self.http = uvicorn.Server(uvicorn.Config(app, host=HOST, port=self.http_port, log_level="warning",
                                                   timeout_graceful_shutdown=1))
         self.serving = asyncio.create_task(self.http.serve())
@@ -131,6 +131,28 @@ async def test_state_shows_the_stopped_plant(stack):
     assert state["alarms"] == []
     assert state["injections"] == {"overload": False, "bearing_overheat": False, "belt_slip": False}
     assert set(state["readings"]) == {p.name for p in REGISTERS.input_registers}
+
+
+async def test_config_describes_the_page_from_the_yaml_files(stack):
+    config = await stack.get("/api/config")
+    names = {r["name"] for r in config["readings"]}
+    assert names == {p.name for p in REGISTERS.input_registers if p.unit}
+    assert "run_state" not in names, "state and fault bits have their own display, not a gauge"
+    assert config["speed"] == {"min": 0, "max": FAST_PLANT.max_speed, "unit": "m/s"}
+    assert config["faults"] == ["overload", "bearing_overheat", "belt_slip"]
+    assert {a["name"] for a in config["alarms"]} == {a.name for a in ALARMS.alarms}
+
+
+async def test_page_and_its_files_are_served_without_hiding_the_api(stack):
+    def fetch(path):
+        with urllib.request.urlopen(f"http://{HOST}:{stack.http_port}{path}", timeout=5) as response:
+            return response.read().decode("utf-8")
+
+    page = await asyncio.to_thread(fetch, "/")
+    for asset in re.findall(r'(?:src|href)="(?!https?:)([^"]+)"', page):
+        assert await asyncio.to_thread(fetch, f"/{asset}")
+    assert "app.js" in page
+    assert (await stack.get("/api/state"))["connected"] is True
 
 
 async def test_websocket_pushes_updates(stack):

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conveyor HMI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="status-bar">
+    <h1>Conveyor CV-01</h1>
+    <div class="status-item"><span class="label">State</span> <strong id="run-state">—</strong></div>
+    <div class="status-item"><span class="label">Plant link</span> <strong id="link">—</strong></div>
+    <div class="status-item"><span class="label">Alarms</span> <strong id="alarm-count">0</strong></div>
+    <time id="clock"></time>
+  </header>
+
+  <p id="message" class="message" role="alert" hidden></p>
+
+  <main class="layout">
+    <section class="panel" aria-labelledby="readings-title">
+      <h2 id="readings-title">Readings</h2>
+      <div id="tiles" class="tiles"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="control-title">
+      <h2 id="control-title">Control</h2>
+      <div class="buttons">
+        <button id="start" type="button">Start</button>
+        <button id="stop" type="button">Stop</button>
+        <button id="reset" type="button">Reset</button>
+      </div>
+      <button id="estop" class="estop" type="button">EMERGENCY STOP</button>
+      <form id="speed-form" class="speed">
+        <label for="speed">Speed setpoint <span id="speed-unit"></span></label>
+        <input id="speed" type="number" step="0.1" required>
+        <button id="speed-set" type="submit">Set</button>
+      </form>
+      <p class="hint">Plant accepted: <strong id="setpoint">—</strong></p>
+      <fieldset id="faults" class="faults">
+        <legend>Fault injection (simulation only)</legend>
+      </fieldset>
+    </section>
+
+    <section class="panel wide" aria-labelledby="alarms-title">
+      <h2 id="alarms-title">Active alarms</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Severity</th><th>Alarm</th><th>State</th><th>Value</th><th>Raised</th><th></th></tr></thead>
+          <tbody id="alarms"></tbody>
+        </table>
+      </div>
+      <p id="no-alarms" class="hint">No active alarms.</p>
+    </section>
+
+    <section class="panel wide" aria-labelledby="trends-title">
+      <h2 id="trends-title">Trends (last 10 minutes)</h2>
+      <p id="no-charts" class="hint" hidden>Trend charts are unavailable: Chart.js did not load. Everything else keeps working.</p>
+      <div id="trends" class="trends"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="events-title">
+      <h2 id="events-title">Alarm history</h2>
+      <div class="table-scroll log">
+        <table>
+          <thead><tr><th>Time</th><th>Alarm</th><th>Event</th><th>Value</th></tr></thead>
+          <tbody id="events"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="operations-title">
+      <h2 id="operations-title">Operator log</h2>
+      <div class="table-scroll log">
+        <table>
+          <thead><tr><th>Time</th><th>Action</th><th>Detail</th><th>Result</th></tr></thead>
+          <tbody id="operations"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

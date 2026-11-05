@@ -6,9 +6,10 @@ from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from hmi.alarms import load_alarm_config
+from hmi.alarms import AlarmConfig, load_alarm_config
 from hmi.logbook import Logbook
 from hmi.plant_client import CommError, PlantClient
 from hmi.service import HmiService, NothingToAcknowledge
@@ -16,6 +17,7 @@ from shared.registers import RegisterMap, load_register_map
 from shared.settings import load_settings
 
 MAX_HISTORY = 1000
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
 class SpeedRequest(BaseModel):
@@ -26,7 +28,7 @@ class FaultRequest(BaseModel):
     active: bool
 
 
-def create_app(service: HmiService, registers: RegisterMap, logbook: Logbook) -> FastAPI:
+def create_app(service: HmiService, registers: RegisterMap, logbook: Logbook, alarm_config: AlarmConfig) -> FastAPI:
     app = FastAPI(title="Conveyor HMI")
     speed_point = registers["speed_setpoint"]
 
@@ -36,6 +38,22 @@ def create_app(service: HmiService, registers: RegisterMap, logbook: Logbook) ->
         except CommError as e:
             raise HTTPException(status_code=503, detail=f"plant unreachable: {e}") from e
         return {"ok": True}
+
+    @app.get("/api/config")
+    async def config() -> dict:
+        """Everything the page needs to lay itself out, so names and limits live in the YAML files only."""
+        return {
+            "readings": [
+                {"name": p.name, "unit": p.unit, "scale": p.scale, "description": p.description}
+                for p in registers.input_registers if p.unit
+            ],
+            "speed": {"min": speed_point.min, "max": speed_point.max, "unit": speed_point.unit},
+            "faults": service.faults,
+            "alarms": [
+                {"name": a.name, "signal": a.signal, "severity": a.severity, "threshold": a.threshold}
+                for a in alarm_config.alarms
+            ],
+        }
 
     @app.get("/api/state")
     async def state() -> dict:
@@ -90,6 +108,8 @@ def create_app(service: HmiService, registers: RegisterMap, logbook: Logbook) ->
         finally:
             service.unsubscribe(queue)
 
+    # Last, because a mount at the root would otherwise shadow the routes above.
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
     return app
 
 
@@ -98,8 +118,9 @@ async def main() -> None:
     registers = load_register_map()
     logbook = Logbook(Path(settings.hmi_db_path))
     client = PlantClient(settings.modbus_host, settings.modbus_port, registers)
-    service = HmiService(client, registers, load_alarm_config(registers), logbook)
-    app = create_app(service, registers, logbook)
+    alarm_config = load_alarm_config(registers)
+    service = HmiService(client, registers, alarm_config, logbook)
+    app = create_app(service, registers, logbook, alarm_config)
     server = uvicorn.Server(uvicorn.Config(app, host=settings.hmi_host, port=settings.hmi_port,
                                            timeout_graceful_shutdown=2))
     await service.start()
