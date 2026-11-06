@@ -37,17 +37,27 @@ def no_delays(config):
 ALARMS = no_delays(load_alarm_config(REGISTERS))
 
 
+def free_ports(count: int) -> list[int]:
+    """Distinct free ports. All sockets stay open until every port is chosen; closing each one at once
+    lets the system hand the same port out twice, which made CI fail once with "address already in use"."""
+    sockets = [socket.socket() for _ in range(count)]
+    try:
+        for s in sockets:
+            s.bind((HOST, 0))
+        return [s.getsockname()[1] for s in sockets]
+    finally:
+        for s in sockets:
+            s.close()
+
+
 def free_port() -> int:
-    with socket.socket() as s:
-        s.bind((HOST, 0))
-        return s.getsockname()[1]
+    return free_ports(1)[0]
 
 
 class Stack:
     def __init__(self, tmp_path, poll_period: float = POLL) -> None:
         self.poll_period = poll_period
-        self.modbus_port = free_port()
-        self.http_port = free_port()
+        self.modbus_port, self.http_port = free_ports(2)
         self.db_path = tmp_path / "logs" / "hmi.sqlite3"
         self.plant_server = self.make_plant_server()
 

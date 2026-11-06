@@ -2,6 +2,13 @@
 
 > 进度日志。新的写在最上面；只追加，不删改旧记录。
 
+## 2026-11-06 · CI 偶发失败 · 完成
+- 做了：推送 f3bacc3 后 CI 失败：177 过、1 个错误，test_start_stop_and_speed_reach_the_plant 启动时 HTTP 端口"已被占用"。失败的是原有测试，不是这次的修复。原因很可能是测试连续两次取空闲端口，每次取完就关掉 socket，Linux 可能把同一个端口发两次，Modbus 和 HTTP 撞在一起。改成同时占住再一起释放
+- 改了：tests/test_hmi.py、tests/test_run.py
+- 验证：本机 `pytest` 178 项全部通过。本机复现不了这个偶发问题，修好没有要看之后的 CI
+- 问题：根因是推断的，日志里看不到 Modbus 端口号，无法直接证实两个端口相同
+- 下一步：推送需要我同意
+
 ## 2026-11-06 · 审查问题修复 · 完成
 - 做了：按我"全部修掉"的决定处理 Codex 审查的问题。① 建连加锁并双重检查，并发请求不再各自建连。② 确认报警改成先写日志后改状态，报警事件和操作记录在同一个事务里，写失败时报警保持未确认、可重试。③ Chart.js 改为 async 加载，CDN 卡住时页面其余部分照常工作，5 秒后提示趋势图不可用。④ 页面只把新时间戳当新数据：确认报警重发的旧快照不进趋势图，也不能让过期页面显示在线。⑤ 趋势图超过 3 秒没数据时插入空点，断开连线。⑥ pymodbus 下限改为 3.16（实际测过的版本）。⑦ 文档改掉说过头的地方：温度步长、哪些失败会记录、设速回读要等下一次扫描、README 测试命令用 .venv；端口竞争写进已知局限
 - 改了：hmi/plant_client.py、hmi/alarms.py、hmi/logbook.py、hmi/service.py、hmi/static/app.js、hmi/static/index.html、pyproject.toml、README.md、docs/alarms.md、docs/architecture.md、docs/registers.md、tests/test_hmi.py、tests/test_alarms.py、TASKS.md

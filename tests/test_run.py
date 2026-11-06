@@ -14,10 +14,21 @@ ROOT = Path(__file__).resolve().parent.parent
 HOST = "127.0.0.1"
 
 
+def free_ports(count: int) -> list[int]:
+    """Distinct free ports. All sockets stay open until every port is chosen; closing each one at once
+    lets the system hand the same port out twice, which made CI fail once with "address already in use"."""
+    sockets = [socket.socket() for _ in range(count)]
+    try:
+        for s in sockets:
+            s.bind((HOST, 0))
+        return [s.getsockname()[1] for s in sockets]
+    finally:
+        for s in sockets:
+            s.close()
+
+
 def free_port() -> int:
-    with socket.socket() as s:
-        s.bind((HOST, 0))
-        return s.getsockname()[1]
+    return free_ports(1)[0]
 
 
 def port_is_free(port: int) -> bool:
@@ -44,8 +55,7 @@ def wait_until_free(port: int, timeout: float = 10.0) -> bool:
 
 class System:
     def __init__(self, tmp_path) -> None:
-        self.modbus_port = free_port()
-        self.http_port = free_port()
+        self.modbus_port, self.http_port = free_ports(2)
         self.env = {**os.environ, "MODBUS_HOST": HOST, "MODBUS_PORT": str(self.modbus_port), "HMI_HOST": HOST,
                     "HMI_PORT": str(self.http_port), "HMI_DB_PATH": str(tmp_path / "hmi.sqlite3")}
 
