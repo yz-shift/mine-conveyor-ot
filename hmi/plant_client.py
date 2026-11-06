@@ -1,5 +1,6 @@
 """Modbus client side of the register map. Knows nothing about the simulator, only about registers."""
 
+import asyncio
 from dataclasses import dataclass
 
 from pymodbus.client import AsyncModbusTcpClient
@@ -25,6 +26,9 @@ class PlantClient:
         # The poll loop retries every cycle anyway, so pymodbus' own retries would only delay
         # noticing a lost plant, and its background reconnect would compete with connect() below.
         self._client = AsyncModbusTcpClient(host, port=port, timeout=timeout, retries=0, reconnect_delay=0)
+        # Requests issued together (a poll and an operator write) must not each open their own connection:
+        # the extra sockets were never closed and piled up on the plant after every outage.
+        self._connect_lock = asyncio.Lock()
 
     async def read_status(self) -> PlantStatus:
         inputs = await self._read_block(self._client.read_input_registers, self._registers.input_registers, "registers")
@@ -54,8 +58,10 @@ class PlantClient:
         return [(p, values[p.address - start]) for p in points]
 
     async def _call(self, request, *args, **kwargs):
-        if not self._client.connected and not await self._client.connect():
-            raise CommError("cannot connect to the plant")
+        if not self._client.connected:
+            async with self._connect_lock:
+                if not self._client.connected and not await self._client.connect():
+                    raise CommError("cannot connect to the plant")
         try:
             response = await request(*args, device_id=DEVICE_ID, **kwargs)
         except ModbusException as e:

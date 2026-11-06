@@ -80,7 +80,8 @@
     </section>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.js"></script>
+  <!-- async: a slow or unreachable CDN must never hold up app.js, only the trend charts. -->
+  <script id="chartjs" async src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

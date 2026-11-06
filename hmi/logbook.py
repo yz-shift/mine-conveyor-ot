@@ -51,6 +51,18 @@ class Logbook:
                 (timestamp, action, detail, error is None, error or ""),
             )
 
+    def record_acknowledgement(self, event: AlarmEvent) -> None:
+        """The alarm event and the operator action in one transaction: both are written or neither is."""
+        with self._db:
+            self._db.execute(
+                "INSERT INTO alarm_events (timestamp, alarm, severity, kind, value, message) VALUES (?, ?, ?, ?, ?, ?)",
+                (event.timestamp, event.alarm, event.severity, event.kind, event.value, event.message),
+            )
+            self._db.execute(
+                "INSERT INTO operations (timestamp, action, detail, ok, error) VALUES (?, ?, ?, ?, ?)",
+                (event.timestamp, "acknowledge", event.alarm, True, ""),
+            )
+
     def recent_alarm_events(self, limit: int = 100) -> list[dict]:
         return self._recent("alarm_events", limit)
 

@@ -54,8 +54,8 @@ would have to on real equipment. Only `emergency_stop` is read from this registe
 |---|---|---|---|---|---|
 | `speed_setpoint` | 0 | 100 | m/s | 0 to 6 | Requested belt speed |
 
-An over-range request is clamped, and the register is rewritten with the value the plant accepted, so
-reading it back always shows the real setpoint.
+An over-range request is clamped, and on its next scan (within 0.1 s) the plant rewrites the register with
+the value it accepted, so from then on reading it back shows the real setpoint.
 
 ## Coils (function codes 01, 05 and 15, read and write)
 

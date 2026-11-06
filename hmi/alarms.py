@@ -161,16 +161,24 @@ class AlarmEngine:
         tracker.raised_at = timestamp
         return self._event(tracker, EventKind.RAISED, timestamp)
 
-    def acknowledge(self, name: str, timestamp: float) -> AlarmEvent | None:
-        """Returns None if there was nothing to acknowledge. Raises KeyError for an unknown alarm."""
+    def acknowledge(self, name: str, timestamp: float, record=None) -> AlarmEvent | None:
+        """Returns None if there was nothing to acknowledge. Raises KeyError for an unknown alarm.
+
+        `record` is called with the event before the state changes. If it raises, the alarm stays
+        unacknowledged, so an acknowledgement is never in effect without its log entry.
+        """
         tracker = self._trackers[name]
         if tracker.state is AlarmState.ACTIVE_UNACKED:
-            tracker.state = AlarmState.ACTIVE_ACKED
+            new_state = AlarmState.ACTIVE_ACKED
         elif tracker.state is AlarmState.CLEARED_UNACKED:
-            tracker.state = AlarmState.NORMAL
+            new_state = AlarmState.NORMAL
         else:
             return None
-        return self._event(tracker, EventKind.ACKNOWLEDGED, timestamp)
+        event = self._event(tracker, EventKind.ACKNOWLEDGED, timestamp)
+        if record is not None:
+            record(event)
+        tracker.state = new_state
+        return event
 
     def visible(self) -> list[AlarmStatus]:
         """Alarms the operator should see, critical first and then newest first."""

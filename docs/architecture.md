@@ -61,7 +61,7 @@ A 200 reply only means the Modbus write succeeded. Whether the plant accepted th
 | Decision | Why | Cost |
 |---|---|---|
 | The plant is pure logic and time only moves in `step(dt)` | Tests simulate hours in a moment, with repeatable results | The server has to supply the clock |
-| Bearing temperature uses the exact solution of a first-order model | The result does not depend on the step size | Only works because the model is this simple |
+| Bearing temperature uses the exact solution of a first-order model | At constant speed the result does not depend on the step size | Only works because the model is this simple; while the belt speeds up, large steps still drift |
 | Separate random generators for the process and for sensor noise | How often the HMI polls cannot change how the plant behaves | None worth noting |
 | The server runs a PLC-style scan: read controls, step, publish | Commands take effect at a known point in the cycle | Up to one scan of delay on every command |
 | A scan never yields to the event loop | Clients cannot read half-updated registers or write between a read and a clear; a test pins this | A slow scan would hold up requests |

@@ -33,7 +33,12 @@ stateDiagram-v2
 
 An alarm stays on screen until it is both over and acknowledged, so a brief one cannot go unseen. Every
 raise, acknowledgement and clear is written to the `alarm_events` table in SQLite, and every operator
-action, including failed ones, to `operations`.
+action to `operations`, including writes that failed because the plant could not be reached. Requests the
+HMI refuses itself (an invalid value, an alarm with nothing to acknowledge) are answered with an error and
+not logged.
+
+An acknowledgement and its log entries are written in one transaction before the alarm changes state. If
+the write fails, the alarm stays unacknowledged and the operator can try again.
 
 ## Alarm table
 

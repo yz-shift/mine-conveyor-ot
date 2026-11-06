@@ -20,7 +20,7 @@ separate supervisory system that knows only the register map.
 - Shows readings and ten minutes of trends with alarm limit lines
 - Starts, stops, resets, emergency-stops and sets the speed remotely
 - Raises warning and critical alarms with a delay, a deadband and acknowledgement
-- Logs every alarm event and operator action to SQLite, including actions that failed
+- Logs every alarm event and operator action to SQLite, including writes the plant could not be reached for
 - Treats lost communication as an alarm and blanks its readings rather than showing frozen values
 
 ## Tech stack
@@ -71,10 +71,10 @@ To try it, press **Start**, wait for the belt to reach speed, and then tick a fa
 Overload and belt slip raise alarms within seconds. Bearing overheat takes about three minutes to reach
 its critical alarms, because it heats up gradually.
 
-To run the tests:
+To run the tests (Windows; on Linux use `.venv/bin/python`):
 
-```bash
-python -m pytest
+```powershell
+.venv\Scripts\python.exe -m pytest
 ```
 
 To check a running system from the outside:
@@ -128,7 +128,9 @@ fault is caught.
 alarms hold their state, because silence is not evidence that a problem went away.
 
 **Time is an input to the physics.** The model has no clock and only moves in `step(dt)`, so tests can simulate
-hours in moments. Bearing temperature uses an exact solution, so the result does not depend on the step size.
+hours in moments. Bearing temperature uses an exact solution for each step, so at constant speed the result does not depend on
+the step size. While the belt speeds up it does: an 8-second start-up gives 27.3 °C in 0.1 s steps and 29.5 °C
+in one 8 s step. The server always steps every 0.1 s, so this only matters to tests that take big steps.
 
 ## Known limitations
 
@@ -143,13 +145,16 @@ hours in moments. Bearing temperature uses an exact solution, so the result does
 
 **HMI**
 - A successful command only means the Modbus write worked. Whether the plant accepted it shows in the run state afterwards.
+- A new setpoint is clamped and written back by the plant on its next scan, up to 0.1 s later, so a read straight after the write can still show the requested value.
+- Requests the HMI refuses itself, such as an out-of-range value or an alarm with nothing to acknowledge, get an error reply but are not logged.
 - Trend data lives in the page, so a reload clears it.
-- Chart.js comes from a CDN, so trend charts do not work offline. A real plant network usually has no internet access, so a real deployment would need a local copy.
+- Chart.js comes from a CDN, so trend charts do not work offline. The page loads it asynchronously, so everything else works while it is slow or missing. A real plant network usually has no internet access, so a real deployment would need a local copy.
 - The JavaScript has no automated tests. It was checked by hand in a browser.
 
 **Simulation**
 - The plant parameters are plausible rather than taken from a real site, and thermal behaviour is sped up so a demo shows faults within minutes.
 - It is one simulated conveyor with one device, and it has never been connected to real industrial hardware.
+- The simulator checks its port is free before starting, but two simulators started at the same instant on Windows can both pass the check and share the port. Starting through `run.py` or Docker Compose avoids this.
 - pymodbus stores coils in 16-bit words, so unused coil addresses 7 to 15 can be read and written but do nothing.
 
 ## Testing

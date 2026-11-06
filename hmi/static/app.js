@@ -5,11 +5,13 @@ const STALE_AFTER_MS = 3000;
 const LOG_REFRESH_MS = 5000;
 const LOG_ROWS = 100;
 const RECONNECT_MS = 1000;
+const CHART_WAIT_MS = 5000;
 
 const $ = (id) => document.getElementById(id);
 
 let config = null;
 let lastMessageAt = 0;
+let lastTimestamp = null; // timestamp of the last poll shown; a repeat of it is not new data
 let speedFilled = false;
 const tiles = new Map(); // reading name -> {box, value}
 const trends = []; // {chart, signals, thresholds}
@@ -145,16 +147,27 @@ function buildTrend(unit, readings) {
 }
 
 function buildTrends() {
-  if (!window.Chart) {
-    $("no-charts").hidden = false;
-    return;
-  }
+  if (trends.length > 0) return;
+  $("no-charts").hidden = true;
   const byUnit = new Map();
   for (const reading of config.readings) {
     if (!byUnit.has(reading.unit)) byUnit.set(reading.unit, []);
     byUnit.get(reading.unit).push(reading);
   }
   for (const [unit, readings] of byUnit) buildTrend(unit, readings);
+}
+
+/* Chart.js loads asynchronously from a CDN. Until it arrives, or if it never does, the rest of the page works. */
+function buildTrendsWhenReady() {
+  if (window.Chart) {
+    buildTrends();
+    return;
+  }
+  const script = $("chartjs");
+  script.addEventListener("load", () => { if (window.Chart) buildTrends(); });
+  script.addEventListener("error", () => { $("no-charts").hidden = false; });
+  // The error event may already have fired, or the request may hang; say so after a while either way.
+  setTimeout(() => { if (!window.Chart) $("no-charts").hidden = false; }, CHART_WAIT_MS);
 }
 
 /* ---------- Showing a state from the server ---------- */
@@ -249,13 +262,17 @@ function renderAlarms(state) {
 
 function addTrendSample(state) {
   for (const { chart, signals, thresholds } of trends) {
+    const previous = chart.data.datasets[0].data.at(-1);
+    // A gap in the samples (the HMI backend was down, or this tab was asleep) is drawn as a gap.
+    const gap = previous && state.timestamp - previous.x > STALE_AFTER_MS / 1000;
     const values = [
       ...signals.map((name) => (state.readings ? state.readings[name] : null)),
       ...thresholds.map((a) => a.threshold),
     ];
     chart.data.datasets.forEach((dataset, i) => {
+      if (gap) dataset.data.push({ x: (previous.x + state.timestamp) / 2, y: null });
       dataset.data.push({ x: state.timestamp, y: values[i] });
-      if (dataset.data.length > TREND_POINTS) dataset.data.shift();
+      while (dataset.data.length > TREND_POINTS) dataset.data.shift();
     });
     chart.update("none");
   }
@@ -312,12 +329,19 @@ function connect() {
   const scheme = location.protocol === "https:" ? "wss" : "ws";
   const socket = new WebSocket(`${scheme}://${location.host}/ws`);
   socket.addEventListener("message", (message) => {
-    const wasStale = Date.now() - lastMessageAt > STALE_AFTER_MS;
-    lastMessageAt = Date.now();
     const state = JSON.parse(message.data);
-    if (wasStale) showMessage("");
+    // An acknowledgement re-sends the last poll's readings with that poll's timestamp. Only a new
+    // timestamp proves the backend is still polling, and only a new one goes on the trend.
+    const fresh = state.timestamp !== lastTimestamp;
+    if (fresh) {
+      const wasStale = Date.now() - lastMessageAt > STALE_AFTER_MS;
+      lastMessageAt = Date.now();
+      lastTimestamp = state.timestamp;
+      if (wasStale) showMessage("");
+    }
+    if (Date.now() - lastMessageAt > STALE_AFTER_MS) return; // an old snapshot must not make the page look live
     render(state);
-    addTrendSample(state);
+    if (fresh) addTrendSample(state);
   });
   socket.addEventListener("close", () => setTimeout(connect, RECONNECT_MS));
 }
@@ -352,7 +376,7 @@ async function main() {
   showMessage("");
   buildTiles();
   buildFaults();
-  buildTrends();
+  buildTrendsWhenReady();
   wireControls();
   connect();
   refreshLogs();

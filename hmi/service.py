@@ -141,12 +141,13 @@ class HmiService:
         self._logbook.record_operation(time.time(), action, detail)
 
     def acknowledge(self, alarm: str) -> None:
-        """Raises KeyError for an unknown alarm and NothingToAcknowledge if it needs no acknowledgement."""
-        timestamp = time.time()
-        event = self._engine.acknowledge(alarm, timestamp)
+        """Raises KeyError for an unknown alarm and NothingToAcknowledge if it needs no acknowledgement.
+
+        The log is written first; if that fails the alarm stays unacknowledged and the operator can retry.
+        """
+        event = self._engine.acknowledge(alarm, time.time(), record=self._logbook.record_acknowledgement)
         if event is None:
             raise NothingToAcknowledge(alarm)
-        self._logbook.record_alarm(event)
-        self._logbook.record_operation(timestamp, "acknowledge", alarm)
-        # Show it at once rather than up to one poll later.
+        # Show it at once rather than up to one poll later. The timestamp stays that of the last poll,
+        # because the readings are from that poll; the page uses it to tell new data from a repeat.
         self._publish({**self._snapshot, "alarms": self._alarms()})

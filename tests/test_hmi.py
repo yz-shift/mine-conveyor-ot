@@ -481,3 +481,58 @@ def test_hmi_never_imports_the_simulator():
     hmi_dir = pathlib.Path(__file__).resolve().parent.parent / "hmi"
     for source in hmi_dir.glob("*.py"):
         assert not re.search(r"^\s*(from|import)\s+simulator", source.read_text(encoding="utf-8"), re.M), source.name
+
+
+# --- Fixes from the 2026-11-05 review ---
+
+async def test_requests_issued_together_open_only_one_connection():
+    port = free_port()
+    server = PlantServer(ConveyorPlant(FAST_PLANT, seed=1), REGISTERS, HOST, port, scan_period=SCAN)
+    await server.start()
+    try:
+        for _ in range(10):
+            client = PlantClient(HOST, port, REGISTERS, timeout=0.5)
+            await asyncio.gather(client.read_status(), client.write_setpoint(1.0), client.read_status(),
+                                 client.write_setpoint(1.5))
+            await asyncio.sleep(0.05)
+            assert len(server._server.active_connections) == 1
+            client.close()
+            await asyncio.sleep(0.05)
+    finally:
+        await server.stop()
+
+
+class FailingLogbook(Logbook):
+    fail = False
+
+    def record_acknowledgement(self, event):
+        if self.fail:
+            raise RuntimeError("disk full")
+        super().record_acknowledgement(event)
+
+
+async def test_acknowledgement_that_cannot_be_logged_does_not_take_effect(tmp_path):
+    book = FailingLogbook(tmp_path / "x.sqlite3")
+    service = HmiService(PlantClient(HOST, free_port(), REGISTERS, timeout=0.2), REGISTERS, ALARMS, book)
+    try:
+        await service._poll_once()
+        book.fail = True
+        with pytest.raises(RuntimeError):
+            service.acknowledge("comm_lost")
+        assert next(a for a in service.snapshot()["alarms"] if a["name"] == "comm_lost")["state"] == "active_unacked"
+        assert book.recent_operations() == []
+
+        book.fail = False
+        service.acknowledge("comm_lost")
+        assert [e["kind"] for e in book.recent_alarm_events()] == ["acknowledged", "raised"]
+        assert [o["action"] for o in book.recent_operations()] == ["acknowledge"]
+    finally:
+        await service.stop()
+        book.close()
+
+
+def test_chart_library_cannot_hold_up_the_page():
+    page = (pathlib.Path(__file__).parent.parent / "hmi" / "static" / "index.html").read_text(encoding="utf-8")
+    external = re.findall(r"<script[^>]*src=\"https?:[^>]*>", page)
+    assert external, "the test is looking at the wrong tag"
+    assert all(" async" in tag for tag in external)

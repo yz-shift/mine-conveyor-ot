@@ -268,3 +268,19 @@ def test_duplicate_alarm_name_is_rejected(tmp_path):
     path = write_config(tmp_path, f"{alarm}\n  - {alarm}")
     with pytest.raises(ValueError, match="duplicate"):
         load_alarm_config(REGISTERS, path)
+
+
+def test_acknowledgement_waits_for_its_record():
+    engine = AlarmEngine([NO_DELAY])
+    run(engine, 90, 0)
+
+    def broken(event):
+        raise OSError("log unavailable")
+
+    with pytest.raises(OSError):
+        engine.acknowledge("temp_high", 2000, record=broken)
+    assert engine.visible()[0].state is AlarmState.ACTIVE_UNACKED
+    recorded = []
+    engine.acknowledge("temp_high", 2001, record=recorded.append)
+    assert [e.kind for e in recorded] == [EventKind.ACKNOWLEDGED]
+    assert engine.visible()[0].state is AlarmState.ACTIVE_ACKED
